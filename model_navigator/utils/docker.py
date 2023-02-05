@@ -278,12 +278,25 @@ class DockerBuilder:
         return DockerImage(image_name)
 
 
+# def get_docker_container_id() -> Optional[ContainerIdType]:
+#     """Return container id in which current process is running or None if process is not running in container"""
+#     try:
+#         cpuset_path = Path("/proc/1/cpuset")
+#         cpuset_content = cpuset_path.read_text("utf-8")
+#         path = Path(cpuset_content).name[:CONTAINER_ID_LENGTH].strip()
+#         return path or None
+#     except FileNotFoundError:
+#         return None
+
 def get_docker_container_id() -> Optional[ContainerIdType]:
     """Return container id in which current process is running or None if process is not running in container"""
-    try:
-        cpuset_path = Path("/proc/1/cpuset")
-        cpuset_content = cpuset_path.read_text("utf-8")
-        path = Path(cpuset_content).name[:CONTAINER_ID_LENGTH].strip()
-        return path or None
-    except FileNotFoundError:
-        return None
+    with open( '/proc/self/mountinfo' ) as file:
+        line = file.readline().strip()
+        while line:
+            if '/docker/containers/' in line:
+                containerID = line.split('/docker/containers/')[-1]     # Take only text to the right
+                containerID = containerID.split('/')[0]                 # Take only text to the left
+                return containerID
+            line = file.readline().strip()
+
+    return None
